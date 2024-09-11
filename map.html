@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hover to View Map</title>
+    <style>
+        /* 클리핑 마스크처럼 지도를 제한할 500x500px 박스 */
+        .map-container {
+            width: 500px;
+            height: 500px;
+            overflow: hidden;
+            position: relative;
+            border: 2px solid red; /* 가이드라인 */
+            margin: 0 auto; /* 중앙 정렬 */
+        }
+
+        /* 지도 이미지 스타일 */
+        .map-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            cursor: grab;
+            transition: transform 0.2s ease;
+            pointer-events: none; /* 클릭으로 이동하지 않도록 설정 */
+            user-select: none; /* 클릭 시 이미지 선택되지 않도록 설정 */
+        }
+
+        /* 드래그 모드에서 커서 스타일 변경 */
+        .dragging {
+            cursor: grabbing !important;
+        }
+    </style>
+</head>
+<body>
+
+<div class="map-container">
+    <img src="map.png" alt="Map" class="map-image" id="mapImage">
+</div>
+
+<script>
+    const mapImage = document.getElementById('mapImage');
+    const container = document.querySelector('.map-container');
+    let isDragging = false;
+    let dragStart = false;
+    let startX, startY, initialX, initialY;
+    let scale = 1;
+
+    // 클릭을 통한 이미지 이동 제한
+    mapImage.addEventListener('click', function(e) {
+        e.preventDefault(); // 클릭 시 기본 동작 차단
+    });
+
+    // 드래그 없이 확대/축소만 가능하게 설정
+    document.addEventListener('wheel', function(e) {
+        e.preventDefault();
+        const scaleAmount = 0.1;
+        if (e.deltaY < 0) {
+            // 확대
+            scale += scaleAmount;
+        } else {
+            // 축소
+            scale = Math.max(scale - scaleAmount, 1); // 축소는 원본 비율 이하로는 줄어들지 않도록
+        }
+
+        // 이미지 크기 조정
+        mapImage.style.transform = `scale(${scale})`;
+
+        // 확대/축소 후에도 이미지가 네모 상자 밖으로 나가지 않도록 위치 조정
+        const maxX = 0;
+        const minX = container.offsetWidth - mapImage.offsetWidth * scale;
+        const maxY = 0;
+        const minY = container.offsetHeight - mapImage.offsetHeight * scale;
+
+        const newX = Math.min(maxX, Math.max(minX, mapImage.offsetLeft));
+        const newY = Math.min(maxY, Math.max(minY, mapImage.offsetTop));
+
+        mapImage.style.left = `${newX}px`;
+        mapImage.style.top = `${newY}px`;
+    });
+
+    // 마우스를 올렸을 때 지도의 아래쪽을 더 확인할 수 있도록 설정
+    container.addEventListener('mousemove', function(e) {
+        const rect = container.getBoundingClientRect();
+        const offsetX = (e.clientX - rect.left) / container.offsetWidth;
+        const offsetY = (e.clientY - rect.top) / container.offsetHeight;
+
+        // 이미지 위치 계산
+        const newLeft = (container.offsetWidth - mapImage.offsetWidth * scale) * offsetX;
+        const newTop = (container.offsetHeight - mapImage.offsetHeight * scale) * offsetY;
+
+        // 지도가 클리핑된 영역 안에 있도록 제한
+        const maxX = 0;
+        const minX = container.offsetWidth - mapImage.offsetWidth * scale;
+        const maxY = 0;
+        const minY = container.offsetHeight - mapImage.offsetHeight * scale;
+
+        mapImage.style.left = `${Math.min(maxX, Math.max(minX, newLeft))}px`;
+        mapImage.style.top = `${Math.min(maxY, Math.max(minY, newTop))}px`;
+    });
+</script>
+
+</body>
+</html>
